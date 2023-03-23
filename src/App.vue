@@ -38,7 +38,7 @@ export default {
 #app {
   width: 100vw;
   height: 100vh;
-  background: url("@/assets/img/bj.png") no-repeat;
+  background: url("@/assets/background.svg") no-repeat;
   background-size:cover;
   position:absolute;
       

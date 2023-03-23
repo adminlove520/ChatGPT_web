@@ -1,46 +1,57 @@
 <template>
   <div class="chat-window">
     <div class="top" >
-      <div class="head-pic">
-        <HeadPortrait :imgUrl="frinedInfo.headImg"></HeadPortrait>
-      </div>
-      <div class="info-detail">
-        <div class="name">{{ frinedInfo.name }}</div>
-        <div class="detail">{{ frinedInfo.detail }}</div>
-      </div>
-      <div class="other-fun">
-        <label @click="sc" >
-          <span class="iconfont icon-snapchat"></span>
-        </label>
-        <label for="docFile">
-          <span class="iconfont icon-wenjian"></span>
-        </label>
-        <label for="imgFile">
-          <span class="iconfont icon-tupian"></span>
-        </label>
-        <input
-          type="file"
-          name=""
-          id="imgFile"
-          @change="sendImg"
-          accept="image/*"
-        />
-        <input
-          type="file"
-          name=""
-          id="docFile"
-          @change="sendFile"
-          accept="application/*,text/*"
-        />
-        <!-- accept="application/*" -->
-      </div>
+      <el-row style="height: 70px;">
+ 
+        <el-col :span="personInfoSpan[0]">
+          <div class="head-pic">
+            <HeadPortrait :imgUrl="frinedInfo.headImg"></HeadPortrait>
+          </div>
+        </el-col>
+        
+        <el-col :span="personInfoSpan[1]">
+          <div class="info-detail">
+            <div class="name">{{ frinedInfo.name }}</div>
+            <div class="detail">{{ frinedInfo.detail }}</div>
+          </div>
+        </el-col>
+        <el-col :span="personInfoSpan[2]">
+          <div class="other-fun">
+            <label @click="sc" >
+              <span class="iconfont icon-snapchat"></span>
+            </label>
+            <label for="docFile">
+              <span class="iconfont icon-wenjian"></span>
+            </label>
+            <label for="imgFile">
+              <span class="iconfont icon-tupian"></span>
+            </label>
+            <input
+              type="file"
+              name=""
+              id="imgFile"
+              @change="sendImg"
+              accept="image/*"
+            />
+            <input
+              type="file"
+              name=""
+              id="docFile"
+              @change="sendFile"
+              accept="application/*,text/*"
+            />
+            <!-- accept="application/*" -->
+          </div>
+        </el-col>
+    </el-row>
+   
     </div>
-    <div class="botoom" id="botoom">
+    <div class="botoom"  :style="{ backgroundImage: 'url(' + contentBackImageUrl + ')' }">
       <div class="chat-content" id="chat-content" ref="chatContent">
         <div class="chat-wrapper" v-for="item in chatList" :key="item.id">
           <div class="chat-friend" v-if="item.uid !== 'jcm'">
-            <div class="chat-text" v-if="item.chatType == 0" style="white-space: pre-wrap;" >
-             <markdown-it-vue class="md-body"  :content="item.msg.trim()"/></div>
+            <div class="chat-text" v-if="item.chatType == 0"  >
+             <markdown-it-vue :options="markdownOption"  :content="item.msg.trim()"/></div>
             <div class="chat-img" v-if="item.chatType == 1">
               <img
                 :src="item.msg"
@@ -107,18 +118,18 @@
       </div>
       <div class="chatInputs">
         <!--表情-->
-        <div class="emoji boxinput" @click="clickEmoji">
+        <div class="emoji boxinput" @click="clickEmoji" v-show="buttonStatus" >
           <img src="@/assets/img/emoji/smiling-face.png" alt="" />
         </div>
         <!--录音-->
-        <div class="send boxinput" @click="stopRecording" v-if="recording" style="margin-left: 1.5%;font-size: 30px;text-align: center;" >
+        <div class="luyin boxinput" @click="stopRecording" v-if="recording" v-show="buttonStatus">
           <i class="el-icon-microphone" style="margin-top: 17%;"></i>
         </div>
-        <div class="send boxinput" @click="startRecording" v-if="!recording"  style="margin-left: 1.5%;font-size: 30px;text-align: center;" >
+        <div class="luyin boxinput" @click="startRecording" v-if="!recording" v-show="buttonStatus">
           <i class="el-icon-turn-off-microphone" style="margin-top: 17%;"></i>
         </div>
         <!--emo表情列表-->
-        <div class="emoji-content">
+        <div class="emoji-content" v-show="buttonStatus">
           <Emoji
             v-show="showEmoji"
             @sendEmoji="sendEmoji"
@@ -126,7 +137,7 @@
           ></Emoji>
         </div>
         <!--输入框-->
-        <textarea id="textareaMsg" class="inputs" style="z-index: 9999999999;min-height: 50px;max-height:400px;max-width: 65%;min-width: 65%;"    maxlength="2000" rows="3" dir autocorrect="off" aria-autocomplete="both" spellcheck="false" autocapitalize="off" autocomplete="off" v-model="inputMsg" @keyup.enter="sendText"  ></textarea>
+        <textarea id="textareaMsg" class="inputs" style="z-index: 9999999999;min-height: 50px;max-height:400px;max-width: 80%;min-width: 45%;"    maxlength="2000" rows="3" dir autocorrect="off" aria-autocomplete="both" spellcheck="false" autocapitalize="off" autocomplete="off" v-model="inputMsg" @keyup.enter="sendText"  ></textarea>
         <!--发送-->
         <div v-if="acqStatus">
           <div class="send boxinput" @click="sendText" >
@@ -149,7 +160,7 @@
 
 <script>
 import { animation,getNowTime,JCMFormatDate } from "@/util/util";
-import { getChatMsg,getCompletion,getChatCompletion,createImage,createImageVariations,createTranscription,createTranslation } from "@/api/getData";
+import { getChatMsg,getCompletion,getChatCompletion,createImage,createImageEdit,createImageVariations,createTranscription,createTranslation } from "@/api/getData";
 import HeadPortrait from "@/components/HeadPortrait";
 import Emoji from "@/components/Emoji";
 import FileCard from "@/components/FileCard.vue";
@@ -157,6 +168,7 @@ import base from "@/api/index";
 import MarkdownItVue from 'markdown-it-vue'
 import 'markdown-it-vue/dist/markdown-it-vue.css'
 import html2canvas from 'html2canvas';
+import {AI_HEAD_IMG_URL,USER_HEAD_IMG_URL,USER_NAME} from '@/store/mutation-types'
 
 export default {
   components: {
@@ -166,6 +178,7 @@ export default {
     MarkdownItVue
   },
   props: {
+    storeStatu: Number,
     settingInfo: Object,
     frinedInfo: Object,
     default() {
@@ -179,6 +192,10 @@ export default {
   },
   data() {
     return {
+      //markdown配置项
+      markdownOption:"",
+      //是否显示表情和录音按钮
+      buttonStatus:true,
       //是否在接收消息中，如果是则true待发送状态，如果是false则是等待消息转圈状态
       acqStatus: true,
       chatList: [],
@@ -188,16 +205,57 @@ export default {
       srcImgList: [],
       recording: false,
       audioChunks: [],
-      screenshot:""
+      screenshot:"",
+      contentBackImageUrl:"https://bpic.51yuansu.com/backgd/cover/00/31/39/5bc8088deeedd.jpg?x-oss-process=image/resize,w_780",
+      updateImage:null,
+      // 是否隐藏对话框上方介绍（空间局促时隐藏）
+      personInfoSpan: [2, 17, 5],
     };
   },
   mounted() {
     this.getFriendChatMsg();
   },
+
+  created() {
+    window.addEventListener('resize', this.handleResize)
+    this.handleResize()
+  },
+
+  destoryed() {
+    window.removeEventListener('resize', this.handleResize)
+  },
   methods: {
+    //监听窗口的变化
+    handleResize() {
+      if (window.innerWidth <= 700) {
+        this.buttonStatus=false
+        var textareaMsg = document.getElementById("textareaMsg");
+        textareaMsg.style.marginLeft = "0px";
+        this.personInfoSpan = [14, 0, 10];
+      } else {
+        this.buttonStatus=true
+        this.personInfoSpan = [2, 17, 5];
+      };
+    },
+    //赋值对话列表
+    assignmentMesList(msgList){
+     this.chatList=msgList
+    },
+    //获取对话列表
+    getMesList(){
+      return this.chatList
+    },
+    //清除当前对话列表
+    clearMsgList(){
+      this.chatList=[]
+    },
+    //更新内容背景图片
+    updateContentImageUrl(imgUrl){
+      this.contentBackImageUrl=imgUrl
+    },
     //截图
     sc(){
-      const contentEle = document.querySelector('#botoom')
+      const contentEle = document.querySelector('#chat-content')
       const options = {
         backgroundColor: "rgb(39, 42, 55)" // 设置截图背景颜色
       };
@@ -318,10 +376,64 @@ export default {
 
       let params={}
 
+      if(this.settingInfo.openChangePicture){
+        if(this.updateImage==null){
+          this.$nextTick(() => {
+            this.acqStatus=true
+          });
+          this.$message({
+            message: "编辑图片模式：请您聊天窗口右上角先上传图片，再发送修改的内容~",
+            type: "warning",
+          });
+          return
+        }else{
+            // 通过验证后，上传文件
+            const formData = new FormData();
+            formData.append("image", this.updateImage);
+            formData.append("prompt", this.inputMsg);
+            formData.append("n", this.settingInfo.n);
+            formData.append("size", this.settingInfo.size);
+
+            const dateNow=JCMFormatDate(getNowTime());
+
+            let chatMsg = {
+              headImg: USER_HEAD_IMG_URL,
+              name: USER_NAME,
+              time: dateNow,
+              msg: this.inputMsg,
+              chatType: 0, //信息类型，0文字，1图片
+              uid: "jcm", //uid
+            };
+
+            this.sendMsg(chatMsg);
+            this.inputMsg = "";
+            createImageEdit(formData,this.settingInfo.KeyMsg).then(data =>{
+              for(var imgInfo of data) {
+                let imgResMsg = {
+                  headImg: AI_HEAD_IMG_URL,
+                  name: this.frinedInfo.name,
+                  time: JCMFormatDate(getNowTime()),
+                  msg: imgInfo.url,
+                  chatType: 1, //信息类型，0文字，1图片
+                  extend: {
+                      imgType: 2, //(1表情，2本地图片)
+                  },
+                  uid: this.frinedInfo.id, //uid
+                };
+                this.sendMsg(imgResMsg);
+                this.srcImgList.push(imgInfo.url);
+              }
+              this.acqStatus=true
+              this.updateImage=null
+            })
+            return
+        }
+      }
+   
       if (this.inputMsg) {
         let chatMsg = {
-          headImg: require("@/assets/img/head.jpg"),
-          name: "君尘陌",
+          headImg: USER_HEAD_IMG_URL,
+          name: USER_NAME,
           time: dateNow,
           msg: this.inputMsg,
           chatType: 0, //信息类型，0文字，1图片
@@ -337,8 +449,8 @@ export default {
           createImage(params,this.settingInfo.KeyMsg).then(data =>{
             for(var imgInfo of data) {
               let imgResMsg = {
-                headImg: require("@/assets/img/ai.png"),
-                name: this.frinedInfo.id,
+                headImg: AI_HEAD_IMG_URL,
+                name: this.frinedInfo.name,
                 time: JCMFormatDate(getNowTime()),
                 msg: imgInfo.url,
                 chatType: 1, //信息类型，0文字，1图片
@@ -360,9 +472,10 @@ export default {
           params.top_p=this.settingInfo.TopP,
           params.presence_penalty=this.settingInfo.PresencePenalty,
           params.frequency_penalty=this.settingInfo.FrequencyPenalty
+         
           let chatBeforResMsg = {
-              headImg: require("@/assets/img/ai.png"),
-              name: this.frinedInfo.id,
+              headImg: AI_HEAD_IMG_URL,
+              name: this.frinedInfo.name,
               time: JCMFormatDate(getNowTime()),
               msg: "",
               chatType: 0, //信息类型，0文字，1图片
@@ -374,11 +487,18 @@ export default {
             this.completion(params,chatBeforResMsg)
           }
         }
-        this.$emit('personCardSort', this.frinedInfo.id)
+        if(this.storeStatu==0){
+          this.$emit('personCardSort', this.frinedInfo.id)
+        
+        }else if(this.storeStatu==1){
+          this.$emit('fineTunesCardSort', this.frinedInfo.id)
+        }
         this.inputMsg = "";
         this.$parent.updateMoneyInfo();
       } else {
-        this.acqStatus=true
+        this.$nextTick(() => {
+            this.acqStatus=true
+        });
         this.$message({
           message: "消息不能为空哦~",
           type: "warning",
@@ -414,14 +534,18 @@ export default {
             }
           ).then(response=>{
             const reader = response.body.getReader();
-      
+
             function readStream(reader) {
               return reader.read().then(({ done, value }) => {
                 if (done) {
                   return;
                 }
-                let decodeds = new TextDecoder().decode(value);
-                let decodedArray = decodeds.split("data: ")
+                if (!_this.chatList[currentResLocation].reminder) {
+                  _this.chatList[currentResLocation].reminder = "";
+                }
+                let decoded = new TextDecoder().decode(value);
+                decoded = _this.chatList[currentResLocation].reminder + decoded;
+                let decodedArray = decoded.split("data: "); 
 
                 decodedArray.forEach(decoded => {
                   if(decoded!==""){
@@ -445,6 +569,7 @@ export default {
         }
     },
     async completion(params,chatBeforResMsg){
+      params.stop=" END"
       params.prompt=this.inputMsg
       // A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
       params.stream=true
@@ -499,6 +624,10 @@ export default {
       }
 
     },
+    resetUpdate(){
+      this.updateImage=null
+      alert("更新的文件已重置")
+    },
     //获取窗口高度并滚动至最底层
     scrollBottom() {
       this.$nextTick(() => {
@@ -513,11 +642,10 @@ export default {
 
     //发送表情
     sendEmoji(msg) {
-      console.log(msg)
       const dateNow=JCMFormatDate(getNowTime());
       let chatMsg = {
-        headImg: require("@/assets/img/head.jpg"),
-        name: "君尘陌",
+        headImg: USER_HEAD_IMG_URL,
+        name: USER_NAME,
         time: dateNow,
         msg: msg,
         chatType: 1, //信息类型，0文字，1图片
@@ -554,7 +682,17 @@ export default {
         this.acqStatus=true
         return;
       }
-      
+
+      if(this.settingInfo.openChangePicture){
+        this.updateImage=file
+        this.$message({
+          message: "图片上传完成啦，请给我提示进行编辑~",
+          type: "info",
+        });
+        e.target.files = null;
+        this.acqStatus=true
+        return
+      }
       // 通过验证后，上传文件
       const formData = new FormData();
       formData.append("image", file);
@@ -565,8 +703,8 @@ export default {
       let _this = this;
 
       let chatMsg = {
-        headImg: require("@/assets/img/head.jpg"),
-        name: "君尘陌",
+        headImg: USER_HEAD_IMG_URL,
+        name: USER_NAME,
         time: dateNow,
         msg: "",
         chatType: 1, //信息类型，0文字，1图片, 2文件
@@ -588,8 +726,8 @@ export default {
       createImageVariations(formData,this.settingInfo.KeyMsg).then(data =>{
         for(var imgInfo of data) {
           let imgResMsg = {
-            headImg: require("@/assets/img/ai.png"),
-            name: this.frinedInfo.id,
+            headImg: AI_HEAD_IMG_URL,
+            name: this.frinedInfo.name,
             time: JCMFormatDate(getNowTime()),
             msg: imgInfo.url,
             chatType: 1, //信息类型，0文字，1图片
@@ -609,8 +747,8 @@ export default {
     sendFile(e) {
       const dateNow=JCMFormatDate(getNowTime());
       let chatMsg = {
-        headImg: require("@/assets/img/head.jpg"),
-        name: "君尘陌",
+        headImg: USER_HEAD_IMG_URL,
+        name: USER_NAME,
         time: dateNow,
         msg: "",
         chatType: 2, //信息类型，0文字，1图片, 2文件
@@ -621,7 +759,7 @@ export default {
       };
       let files = e.target.files[0]; //图片文件名
       chatMsg.msg = files;
-      console.log(files);
+
       if (files) {
         switch (files.type) {
           case "application/msword":
@@ -723,8 +861,9 @@ textarea::-webkit-scrollbar-thumb {
   }
   .botoom {
     width: 100%;
-    height: 74vh;
-    background-color: rgb(50, 54, 68);
+    height: 83vh;
+    background-size:100% 100%;
+    // background-color: rgb(50, 54, 68);
     border-radius: 20px;
     padding: 20px;
     box-sizing: border-box;
@@ -736,107 +875,105 @@ textarea::-webkit-scrollbar-thumb {
       padding: 20px;
       box-sizing: border-box;
       &::-webkit-scrollbar {
-        width: 0; /* Safari,Chrome 隐藏滚动条 */
-        height: 0; /* Safari,Chrome 隐藏滚动条 */
-        display: none; /* 移动端、pad 上Safari，Chrome，隐藏滚动条 */
+        width: 3px; /* 设置滚动条宽度 */
       }
-      .chat-wrapper {
+      &::-webkit-scrollbar-thumb {
+        background-color: rgb(66, 70, 86); /* 设置滚动条滑块的背景色 */
+        border-radius: 50%; /* 设置滑块的圆角 */
+      }
+      .chat-friend {
+        width: 100%;
+        float: left;
+        margin-bottom: 20px;
         position: relative;
-        word-break: break-all;
-        .chat-friend {
-          width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-start;
+        .chat-text {
           float: left;
-          margin-bottom: 20px;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-start;
-          align-items: flex-start;
-          .chat-text {
-            max-width: 90%;
-            padding-top: 15px;
-            padding-bottom: 7px;
-            padding-left: 20px;
-            padding-right: 20px;
-            border-radius: 20px 20px 20px 5px;
-            background-color: rgb(255, 255, 255);
-            color: #fff;
-            &:hover {
-              background-color: rgb(255, 255, 255);
-            }
-          }
-          .chat-img {
-            img {
-              width: 100px;
-              height: 100px;
-            }
-          }
-          .info-time {
-            margin: 10px 0;
-            color: #fff;
-            font-size: 14px;
-            img {
-              width: 30px;
-              height: 30px;
-              border-radius: 50%;
-              vertical-align: middle;
-              margin-right: 10px;
-            }
-            span:last-child {
-              color: rgb(101, 104, 115);
-              margin-left: 10px;
-              vertical-align: middle;
-            }
+          max-width: 90%;
+          padding: 20px;
+          border-radius: 20px 20px 20px 5px;
+          background-color: rgb(50, 54, 68);
+          color: #fff;
+        }
+        .chat-img {
+          img {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 10px;
           }
         }
-        .chat-me {
-          width: 100%;
-          float: right;
-          margin-bottom: 20px;
-          position: relative;
+        .info-time {
+          margin: 10px 0;
+          color: #fff;
+          font-size: 14px;
           display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-          align-items: flex-end;
-          .chat-text {
-            float: right;
-            max-width: 90%;
-            padding: 20px;
-            border-radius: 20px 20px 5px 20px;
-            background-color: rgb(29, 144, 245);
-            color: #fff;
-            &:hover {
-              background-color: rgb(26, 129, 219);
-            }
-          }
-          .chat-img {
-            img {
-              max-width: 300px;
-              max-height: 200px;
-              border-radius: 10px;
-            }
-          }
-          .info-time {
-            margin: 10px 0;
-            color: #fff;
-            font-size: 14px;
-            display: flex;
-            justify-content: flex-end;
+          justify-content: flex-start;
 
-            img {
-              width: 30px;
-              height: 30px;
-              border-radius: 50%;
-              vertical-align: middle;
-              margin-left: 10px;
-            }
-            span {
-              line-height: 30px;
-            }
-            span:first-child {
-              color: rgb(101, 104, 115);
-              margin-right: 10px;
-              vertical-align: middle;
-            }
+          img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 10px;
+          }
+          span {
+            line-height: 30px;
+          }
+          span:last-child {
+            color: rgb(101, 104, 115);
+            margin-left: 10px;
+            vertical-align: middle;
+          }
+        }
+      }
+      .chat-me {
+        width: 100%;
+        float: right;
+        margin-bottom: 20px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-end;
+        .chat-text {
+          float: right;
+          max-width: 90%;
+          padding: 20px;
+          border-radius: 20px 20px 5px 20px;
+          background-color: rgb(50, 54, 68);
+          color: #fff;
+        }
+        .chat-img {
+          img {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 10px;
+          }
+        }
+        .info-time {
+          margin: 10px 0;
+          color: #fff;
+          font-size: 14px;
+          display: flex;
+          justify-content: flex-end;
+
+          img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-left: 10px;
+          }
+          span {
+            line-height: 30px;
+          }
+          span:first-child {
+            color: rgb(101, 104, 115);
+            margin-right: 10px;
+            vertical-align: middle;
           }
         }
       }
@@ -870,10 +1007,22 @@ textarea::-webkit-scrollbar-thumb {
           background-color: rgb(46, 49, 61);
           border: 1px solid rgb(71, 73, 82);
         }
+        width: 50px;
+        min-width: 50px;
       }
-
+      .luyin {
+        margin-left: 1.5%;font-size: 30px;text-align: center;
+        transition: 0.3s;
+        width: 50px;
+        min-width: 50px;
+        &:hover {
+          color:#fff;
+          background-color: rgb(46, 49, 61);
+          border: 1px solid rgb(71, 73, 82);
+        }
+      }
       .inputs {
-        width: 65%;
+        width: 95%;
         height: 50px;
         background-color: rgb(66, 70, 86);
         border-radius: 15px;

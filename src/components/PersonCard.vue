@@ -1,12 +1,11 @@
 <template>
-  <div class="person-card" :class="{ activeCard: personInfo.id == current }">
+  <div class="person-card" :class="{ activeCard: personInfo.id == pcCurrent }">
     <div class="info">
-          <HeadPortrait :imgUrl="personInfo.headImg" v-show="personInfo.showHeadImg"></HeadPortrait>
-          <div class="info-detail">
-            <div class="name">{{ truncateString(personInfo.name, 17) }}</div>
-            <div class="detail">{{ personInfo.lastMsg }}</div>
-          </div>
-
+      <HeadPortrait :imgUrl="personInfo.headImg" v-show="personInfo.showHeadImg" />
+      <div class="info-detail">
+        <div class="name">{{ personInfo.name ? personInfo.name.slice(0, 20) : '正在训练...' }}</div>
+        <div class="detail">{{ personInfo.lastMsg.slice(0, 22) }}</div>
+      </div>
     </div>
   </div>
 </template>
@@ -17,12 +16,11 @@ import HeadPortrait from "./HeadPortrait.vue";
 export default {
   props: {
     personInfo: {
-      default: {
-      },
+      default: {},
     },
     pcCurrent: {
-      default: ''
-    }
+      default: '',
+    },
   },
   components: {
     HeadPortrait,
@@ -30,24 +28,18 @@ export default {
   data() {
     return {
       current: '',
-    }
+    };
   },
   watch: {
-    pcCurrent: function() {
-      this.isActive()
-    }
+    pcCurrent() {
+      this.isActive();
+    },
   },
   methods: {
     isActive() {
-      this.current = this.pcCurrent
-    },
-    truncateString(str, num) {
-      if (str.length <= num) {
-        return str;
-      }
-      return str.slice(0, num) + "...";
-    },
-  }
+      this.current = this.pcCurrent;
+    }
+  },
 };
 </script>
 
@@ -71,6 +63,10 @@ export default {
     .info-detail {
       margin-top: 5px;
       margin-left: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      text-overflow: ellipsis;
       .name {
         color: #fff;
         overflow: hidden;
@@ -91,7 +87,6 @@ export default {
     background-color: #1d90f5;
     transition: 0.3s;
     box-shadow: 0px 0px 10px 0px rgba(0, 136, 255);
-    // box-shadow:  0 5px 20px rgba(251, 152, 11, .5);
     .info {
       .info-detail {
         .detail {
@@ -102,15 +97,15 @@ export default {
   }
 }
 .activeCard {
-    background-color: #1d90f5;
-    transition: 0.3s;
-    box-shadow: 3px 2px 10px 0px rgba(0, 136, 255);
-    .info {
-      .info-detail {
-        .detail {
-          color: #fff;
-        }
+  background-color: #1d90f5;
+  transition: 0.3s;
+  box-shadow: 3px 2px 10px 0px rgba(0, 136, 255);
+  .info {
+    .info-detail {
+      .detail {
+        color: #fff;
       }
     }
+  }
 }
 </style>
